@@ -1,5 +1,4 @@
-github/workflows/build-apk.yml
-
+YAML
 name: Build TikBoost APK
 
 on:
@@ -8,14 +7,42 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Download project files
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Android APK
-        uses: cemcoe/web-to-apk-action@v1
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          app_name: "TikBoost"
-          app_id: "com.tikboost.app"
-          build_command: "echo Static HTML app"
-          web_dir: "."
+          node-version: 20
+
+      - name: Install Capacitor
+        run: |
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Configure Capacitor
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+          npx cap init TikBoost com.tikboost.app --web-dir www
+          npx cap add android
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TikBoost-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
